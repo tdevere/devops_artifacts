@@ -80,4 +80,49 @@ Run it multiple times - the version auto-increments (1.0.0 → 1.0.1 → 1.0.2).
    - **Organization**: Select your org
    - **Scopes**: Select **Packaging** → **Read, write & manage**
 5. Click **Create** and copy the token
-# devops_artifacts
+
+## NuGet Configuration Notes
+
+### Where Credentials Are Stored
+
+By default, the script stores credentials in your **user-level** NuGet config:
+
+```
+%AppData%\NuGet\NuGet.config
+```
+
+NuGet loads configuration in this order (later overrides earlier):
+
+| Priority | Location |
+|----------|----------|
+| 1 (lowest) | Machine-wide: `%ProgramFiles(x86)%\NuGet\Config\` |
+| 2 | User-level: `%AppData%\NuGet\NuGet.config` |
+| 3 | Solution-level: `nuget.config` in solution root |
+| 4 (highest) | Project-level: `nuget.config` in project folder |
+
+### Alternative: Local-Only Configuration
+
+If you don't want to modify your user-level config, you can create a local `nuget.config` instead:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="MyFeed" value="https://pkgs.dev.azure.com/ORG/_packaging/FEED/nuget/v3/index.json" />
+  </packageSources>
+  <packageSourceCredentials>
+    <MyFeed>
+      <add key="Username" value="az" />
+      <add key="ClearTextPassword" value="YOUR_PAT_HERE" />
+    </MyFeed>
+  </packageSourceCredentials>
+</configuration>
+```
+
+Then push with:
+
+```powershell
+dotnet nuget push package.nupkg --source MyFeed --configfile nuget.config
+```
+
+This keeps credentials local to the project and doesn't affect other projects on your machine.
